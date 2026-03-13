@@ -64,6 +64,25 @@ mkdir -p /volume1/docker/garmin-api/secrets
 - `/volume1/docker/garmin-api/tokens` — stores the Garmin Connect session tokens after first login
 - `/volume1/docker/garmin-api/secrets` — stores your Garmin login credentials as plain text files
 
+### Find your PUID and PGID
+
+The `PUID` and `PGID` values tell the container which user and group should own the files it creates. Using the correct values prevents permission errors on your NAS volume.
+
+SSH into your NAS and run:
+```bash
+id
+```
+
+You will see output like:
+```
+uid=1000(admin) gid=10(wheel) groups=10(wheel),101(docker)
+```
+
+- The number after `uid=` is your **PUID** → use this as the value for `PUID`
+- The number after `gid=` is your **PGID** → use this as the value for `PGID`
+
+In the example above: `PUID=1000` and `PGID=10`. Update the compose file with your own values if they differ.
+
 ---
 
 ## Step 3: Store your Garmin credentials
@@ -128,7 +147,8 @@ Paste the result as the value for `TOKEN` in the compose file.
 2. Give it a name (e.g. `garmin`)
 3. Paste the YAML below into the **Web editor**
 4. Replace `[enter your key here]` and `[enter your token here]` with the values you generated in Step 5
-5. Click **Deploy the stack**
+5. Update `PUID` and `PGID` with the values you found in Step 2
+6. Click **Deploy the stack**
 ```yaml
 version: "3.9"
 services:
