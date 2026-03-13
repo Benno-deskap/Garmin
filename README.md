@@ -11,6 +11,20 @@ This Docker Compose stack spins up three services that work together to fetch yo
 
 Your Garmin email and password are stored securely as Docker secrets and never exposed in the compose file directly.
 
+## Workflow overview
+
+![n8n Garmin workflow](Scherm_afbeelding_2026-03-13_om_18_45_09.png)
+
+The workflow runs every morning at 08:00 and executes the following steps:
+1. **Elke ochtend 08:00** — scheduled trigger
+2. **Haal alle Garmin data op** — fetches all health and activity data from the Garmin API
+3. **Laad Advies Geheugen** — loads previous advice from memory
+4. **Haal 5K Schema Op** — retrieves your 5K training schedule
+5. **Groq AI Analyse** — sends all data to Groq AI for analysis and personal training advice
+6. **Sla Adviezen Op** — saves the generated advice to memory
+7. **Maak HTML rapport** — builds a styled HTML report
+8. **Send an Email** — delivers the report to your inbox
+
 ---
 
 ## Step 1: Install Portainer on your NAS
@@ -51,7 +65,20 @@ This will:
 
 ---
 
-## Step 2: Create the required directories on your NAS
+## Step 2: Create the n8n-network in Portainer
+
+All three containers communicate with each other over a shared Docker network called `n8n-network`. You need to create this network once before deploying the stack.
+
+1. In Portainer, go to **Networks** → **Add network**
+2. Fill in the following:
+   - **Name:** `n8n-network`
+   - **Driver:** `bridge`
+   - Leave all other settings as default
+3. Click **Create the network**
+
+---
+
+## Step 3: Create the required directories on your NAS
 
 SSH into your NAS and run:
 ```bash
@@ -85,7 +112,7 @@ In the example above: `PUID=1000` and `PGID=10`. Update the compose file with yo
 
 ---
 
-## Step 3: Store your Garmin credentials
+## Step 4: Store your Garmin credentials
 
 Create two plain text files in the secrets folder:
 ```bash
@@ -97,13 +124,13 @@ Each file should contain **only** the email or password, nothing else — no quo
 
 ---
 
-## Step 4: First-time Garmin login and MFA code
+## Step 5: First-time Garmin login and MFA code
 
 When the `garmin-api` container starts for the very first time, Garmin Connect will send a **one-time verification code to your email address** as part of their MFA (multi-factor authentication) process.
 
 To complete the first login:
 
-1. Start the stack in Portainer (see Step 6)
+1. Start the stack in Portainer (see Step 7)
 2. Open the logs of the `garmin-api` container in Portainer → **Containers** → `garmin-api` → **Logs**
 3. Watch for a prompt like:
 ```
@@ -117,7 +144,7 @@ To complete the first login:
 
 ---
 
-## Step 5: Generate your keys
+## Step 6: Generate your keys
 
 ### N8N_ENCRYPTION_KEY
 This key is used by n8n to encrypt stored credentials. Generate a random 32+ character string. You can use any of these methods:
@@ -141,13 +168,13 @@ Paste the result as the value for `TOKEN` in the compose file.
 
 ---
 
-## Step 6: Deploy the stack in Portainer
+## Step 7: Deploy the stack in Portainer
 
 1. In Portainer, go to **Stacks** → **Add Stack**
 2. Give it a name (e.g. `garmin`)
 3. Paste the YAML below into the **Web editor**
-4. Replace `[enter your key here]` and `[enter your token here]` with the values you generated in Step 5
-5. Update `PUID` and `PGID` with the values you found in Step 2
+4. Replace `[enter your key here]` and `[enter your token here]` with the values you generated in Step 6
+5. Update `PUID` and `PGID` with the values you found in Step 3
 6. Click **Deploy the stack**
 ```yaml
 version: "3.9"
@@ -179,7 +206,7 @@ services:
     volumes:
       - /volume1/docker/n8n:/home/node/.n8n
     networks:
-      - servarrnetwork
+      - n8n-network
     deploy:
       resources:
         limits:
@@ -197,7 +224,7 @@ services:
       - TOKEN=[enter your token here]
     shm_size: 1gb
     networks:
-      - servarrnetwork
+      - n8n-network
   garmin-api:
     image: python:3.12-slim
     container_name: garmin-api
@@ -213,13 +240,57 @@ services:
       - garmin_email
       - garmin_password
     networks:
-      - servarrnetwork
+      - n8n-network
 secrets:
   garmin_email:
     file: /volume1/docker/garmin-api/secrets/garmin_email.txt
   garmin_password:
     file: /volume1/docker/garmin-api/secrets/garmin_password.txt
 networks:
-  servarrnetwork:
+  n8n-network:
     external: true
 ```
+
+---
+
+## Step 8: First-time login in n8n and create your account
+
+1. Open your browser and go to `http://[your NAS IP]:5678`
+2. You will be greeted by the n8n setup screen — click **Get started**
+3. Fill in the following to create your admin account:
+   - **First name** and **Last name**
+   - **Email address** — this will be your login username
+   - **Password**
+4. Click **Next** and follow the remaining setup steps (you can skip optional questions)
+5. You are now logged in to your n8n instance
+
+> **Tip:** Bookmark `http://[your NAS IP]:5678` for easy access.
+
+---
+
+## Step 9: Import the Garmin workflow
+
+### Option A — Import from a JSON file
+
+1. In n8n, go to the **Workflows** overview (left sidebar)
+2. Click **Add workflow** → in the top right corner click the **⋮** (three dots) menu → **Import from file**
+3. Select the downloaded `.json` workflow file
+4. The workflow will open in the editor — click **Save** in the top right corner
+
+### Option B — Import from clipboard
+
+1. Open the `.json` file in a text editor and copy all the contents
+2. In n8n, go to **Workflows** → **Add workflow**
+3. Click the **⋮** menu in the top right → **Import from URL / clipboard**
+4. Paste the JSON and confirm
+5. Click **Save**
+
+### Activate the workflow
+
+After importing, the workflow is inactive by default. To enable the scheduled trigger:
+
+1. Open the workflow
+2. Toggle the **Active** switch in the top right corner from off to on
+3. The workflow will now run automatically every morning at 08:00
+
+> **Note:** Make sure all credentials (email, Groq API key) are configured in the workflow nodes before activating.
