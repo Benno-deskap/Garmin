@@ -13,13 +13,16 @@ Your Garmin email and password are stored securely as Docker secrets and never e
 
 ---
 
-## Step 1: Install Docker and Portainer on your NAS
+## Step 1: Install Portainer on your NAS
 
-Portainer is a web-based UI for managing Docker containers. It is required to create and manage the Docker stack in the next steps.
+Portainer is a web-based UI for managing Docker containers. It runs as a Docker container itself and gives you a visual interface to deploy and manage stacks without needing the command line after initial setup.
 
-### On your NAS:
-1. Install **Docker** via your NAS package manager or follow your NAS vendor's Docker installation guide
-2. SSH into your NAS and run the following to install Portainer:
+### Prerequisites
+- Docker must already be running on your NAS. Install it via your NAS package manager (e.g. Container Manager, Docker package) before continuing.
+
+### Install Portainer via SSH
+
+SSH into your NAS and run this single command:
 ```bash
 docker run -d \
   --name portainer \
@@ -30,15 +33,27 @@ docker run -d \
   portainer/portainer-ce:latest
 ```
 
-3. Open Portainer in your browser at `http://[your NAS IP]:9000`
-4. Create an admin account on first launch
-5. Select **Local** as the environment to manage your local Docker instance
+This will:
+- Pull the latest Portainer Community Edition image
+- Start it as a background container that survives reboots
+- Expose the web UI on port `9000`
+- Mount the Docker socket so Portainer can manage your containers
+- Store Portainer's own data in `/volume1/docker/portainer`
+
+### First-time setup
+
+1. Open your browser and go to `http://[your NAS IP]:9000`
+2. You will be prompted to create an **admin username and password** — do this within 5 minutes or Portainer will time out and you'll need to restart the container
+3. On the next screen, select **Local** as the environment
+4. Click **Connect** — you now have full Docker management via the Portainer web UI
+
+> **Tip:** Bookmark `http://[your NAS IP]:9000` for easy access.
 
 ---
 
 ## Step 2: Create the required directories on your NAS
 
-Create the following folder structure. SSH into your NAS and run:
+SSH into your NAS and run:
 ```bash
 mkdir -p /volume1/docker/n8n
 mkdir -p /volume1/docker/garmin-api/tokens
@@ -88,7 +103,7 @@ To complete the first login:
 ### N8N_ENCRYPTION_KEY
 This key is used by n8n to encrypt stored credentials. Generate a random 32+ character string. You can use any of these methods:
 
-**Option A — OpenSSL (Linux/Mac/NAS SSH):**
+**Option A — OpenSSL (via SSH):**
 ```bash
 openssl rand -hex 32
 ```
@@ -98,7 +113,7 @@ openssl rand -hex 32
 Copy the result and paste it as the value for `N8N_ENCRYPTION_KEY` in the compose file. **Save it somewhere safe** — if you lose it, your stored n8n credentials cannot be recovered.
 
 ### Browserless TOKEN
-This token protects your browserless instance from unauthorized access. Generate it the same way as the encryption key — any random string works:
+This token protects your browserless instance from unauthorized access. Generate it the same way:
 ```bash
 openssl rand -hex 24
 ```
