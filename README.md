@@ -4,7 +4,8 @@ Automatically fetch your Garmin fitness data every morning and receive a persona
 
 ## Workflow overview
 
-![n8n Garmin workflow](workflow.png)
+<img width="1024" height="148" alt="image" src="https://github.com/user-attachments/assets/cd9400b8-1ad3-4084-b395-06766f90c34a" />
+
 
 The workflow runs every morning at 08:00 and executes the following steps:
 
