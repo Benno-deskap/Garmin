@@ -1,10 +1,10 @@
 # Garmin
 Fetch Garmin data and use AI to give personal training advice
 
-Step 1: setup Docker 
+## Step 1: Setup Docker
 
-Step 2: make an new Docker instance using the below Yaml in your Stack 
-
+## Step 2: Make a new Docker instance using the below YAML in your Stack
+```yaml
 version: "3.9"
 services:
   n8n:
@@ -77,9 +77,4 @@ secrets:
 networks:
   servarrnetwork:
     external: true
-
-
-
-
-
-    
+```
