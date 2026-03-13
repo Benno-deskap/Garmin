@@ -1,80 +1,23 @@
 # Garmin
 Fetch Garmin data and use AI to give personal training advice
 
-## Step 1: Setup Docker
+## What this does
 
-## Step 2: Make a new Docker instance using the below YAML in your Stack
-```yaml
-version: "3.9"
-services:
-  n8n:
-    image: n8nio/n8n:latest
-    container_name: n8n
-    restart: unless-stopped
-    ports:
-      - "5678:5678"
-    environment:
-      - PUID=1000
-      - PGID=10
-      - TZ=Europe/Amsterdam
-      - GENERIC_TIMEZONE=Europe/Amsterdam
-      - NODE_ENV=production
-      - N8N_SECURE_COOKIE=false
-      - N8N_USER_MANAGEMENT_DISABLED=false
-      - N8N_ENCRYPTION_KEY=[enter your key here]
-      - N8N_RUNNER_ENABLED=false
-      - NODE_FUNCTION_ALLOW_EXTERNAL=zlib,axios,lodash
-      - NODE_OPTIONS=--max-old-space-size=8192
-      - N8N_PAYLOAD_SIZE_MAX=100
-      - EXECUTIONS_DATA_PRUNE=true
-      - EXECUTIONS_DATA_MAX_AGE=72
-      - EXECUTIONS_DATA_PRUNE_MAX_COUNT=10000
-      - EXECUTIONS_DATA_SAVE_ON_ERROR=all
-      - EXECUTIONS_DATA_SAVE_SUCCESS_CONFIRMATION=false
-    volumes:
-      - /volume1/docker/n8n:/home/node/.n8n
-    networks:
-      - servarrnetwork
-    deploy:
-      resources:
-        limits:
-          memory: 12G
-        reservations:
-          memory: 2G
-  browserless:
-    image: browserless/chrome:latest
-    container_name: browserless
-    restart: unless-stopped
-    ports:
-      - "3025:3000"
-    environment:
-      - MAX_CONCURRENT_SESSIONS=2
-      - TOKEN=[enter your token here]
-    shm_size: 1gb
-    networks:
-      - servarrnetwork
-  garmin-mcp:
-    image: python:3.12-slim
-    container_name: garmin-mcp
-    restart: unless-stopped
-    working_dir: /app
-    entrypoint: bash -c "pip install --no-cache-dir garminconnect flask && python /app/server.py"
-    ports:
-      - "8085:8080"
-    volumes:
-      - /volume1/docker/garmin-mcp/server.py:/app/server.py
-      - /volume1/docker/garmin-mcp/tokens:/root/.garminconnect
-    secrets:
-      - garmin_email
-      - garmin_password
-    networks:
-      - servarrnetwork
-secrets:
-  garmin_email:
-    file: /volume1/docker/garmin-mcp/secrets/garmin_email.txt
-  garmin_password:
-    file: /volume1/docker/garmin-mcp/secrets/garmin_password.txt
-networks:
-  servarrnetwork:
-    external: true
-```
+This Docker Compose stack spins up three services that work together to fetch your Garmin fitness data and analyze it with AI:
+
+- **n8n** — a self-hosted workflow automation tool (runs on port `5678`). This is the core engine that orchestrates all data fetching, processing, and AI analysis.
+- **Browserless** — a headless Chrome instance (runs on port `3025`) used by n8n to perform browser-based tasks where needed.
+- **Garmin MCP** — a lightweight Python/Flask server (runs on port `8085`) that connects to Garmin Connect using your credentials and exposes your health and activity data as a local API.
+
+Your Garmin email and password are stored securely as Docker secrets and never exposed in the compose file directly.
+
+---
+
+## Step 1: Install Docker and Portainer on your NAS
+
+Portainer is a web-based UI for managing Docker containers. It is required to create and manage the Docker stack in the next steps.
+
+### On Synology NAS:
+1. Open **Package Center** and install **Container Manager** (this includes Docker)
+2. SSH into your NAS and run the following to install Portainer:
+```bash
