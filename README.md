@@ -350,7 +350,7 @@ The workflow is inactive by default after importing.
 ## n8n Workflow JSON
 
 Copy the JSON below and import it into n8n (see Step 13), or download the `Garmin_clean.json` file from this repository.
-
+```json
 {
   "name": "Garmin 5K Training Assistant (Anonymous)",
   "nodes": [
