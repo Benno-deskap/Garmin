@@ -386,4 +386,41 @@ Copy the JSON below and import it into n8n (see Step 13), or download the `Garmi
         "jsCode": "// 5K Training Schedule (8 weeks)\nconst SCHEMA = {\n  1: { ma: { type: 'interval', omschrijving: 'Warming-up, running intervals, cooling-down', duurMin: 28 } }\n};\n\nconst garminData = $input.first().json;\nconst score = garminData.trainingReadiness?.score ?? 100;\n\n// Adaptive training logic based on readiness (Anonymized)\nlet aanpassing = (score < 40) ? 'rest' : (score < 70) ? 'light' : 'normal';\n\nreturn [{ json: { ...garminData, schemaContext: { aanpassing, score } } }];"
       },
       "id": "9dfb5f51-e85d-4aba-b73d-0c6f8ed41ae1",
-      "name": "Fetch 5K Schedule
+      "name": "Fetch 5K Schedule",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [17664, 7152]
+    },
+    {
+      "parameters": {
+        "jsCode": "const GROQ_API_KEY = '[YOUR_GROQ_API_KEY]';\nconst systemContent = \"Je bent een data-gedreven gezondheidscoach. Analyseer de trends. Wees concreet en bondig.\";\n\nreturn [{ json: { analyse: \"AI analysis result\", garminData: $input.first().json } }];"
+      },
+      "id": "38237733-704f-4b96-9015-25faa587bcde",
+      "name": "Groq AI Analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [17824, 7152]
+    },
+    {
+      "parameters": {
+        "fromEmail": "[SENDER_EMAIL]",
+        "toEmail": "[RECIPIENT_EMAIL]",
+        "subject": "={{ $json.onderwerp }}",
+        "html": "={{ $json.html }}"
+      },
+      "id": "73ca377b-5072-449e-9aca-7a46b4cf6dd8",
+      "name": "Send an Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [18352, 7152]
+    }
+  ],
+  "connections": {
+    "Every morning 08:00": { "main": [[{ "node": "Fetch all Garmin data", "type": "main", "index": 0 }]] },
+    "Fetch all Garmin data": { "main": [[{ "node": "Fetch 5K Schedule", "type": "main", "index": 0 }]] },
+    "Fetch 5K Schedule": { "main": [[{ "node": "Groq AI Analysis", "type": "main", "index": 0 }]] },
+    "Groq AI Analysis": { "main": [[{ "node": "Send an Email", "type": "main", "index": 0 }]] }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1" }
+}
