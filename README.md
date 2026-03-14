@@ -269,7 +269,53 @@ networks:
 
 ---
 
-### Step 9: Complete the first-time Garmin login
+### Step 9: Deploy the Garmin API server script
+
+The `garmin-api` container runs a small Flask web server that bridges the Garmin Connect API and your n8n workflow. The script is mounted into the container as a volume, so you need to place it on your NAS before starting the stack.
+
+Download `server.py` from this repository:
+
+👉 [server.py](./server.py)
+
+Copy it to your NAS:
+
+```bash
+cp server.py /volume1/docker/garmin-api/server.py
+```
+
+**What the script does:**
+
+The server exposes a set of HTTP endpoints that n8n calls every morning to collect your Garmin data. Each endpoint maps directly to a Garmin Connect API call via the `garminconnect` Python library.
+
+| Endpoint | Data returned |
+|---|---|
+| `/health` | Connection status |
+| `/slaap` | Sleep data (duration, stages, score) |
+| `/stappen` | Daily step count and goal |
+| `/hartslag` | Resting heart rate and daily averages |
+| `/hrv` | Heart Rate Variability |
+| `/stress` | Stress level throughout the day |
+| `/stats` | General daily stats summary |
+| `/gewicht` | Weight and body composition |
+| `/activiteiten` | Recent activities (runs, walks, etc.) |
+| `/training-readiness` | Training Readiness score and feedback |
+| `/training-status` | Training Status, acute/chronic load, VO2max |
+| `/vo2max` | VO2max and fitness age |
+| `/race-predictions` | Predicted race times (5K, 10K, HM, Marathon) |
+| `/hartslagzones` | Heart rate zone distribution |
+| `/activiteit-zones` | HR zones for a specific activity |
+| `/fitnessleeftijd` | Fitness age |
+| `/persoonlijke-records` | Personal records per distance |
+
+**How authentication works:**
+
+The script reads your Garmin email and password from Docker secrets (`/run/secrets/garmin_email` and `/run/secrets/garmin_password`). On first start it performs a full login and saves the session token to `/root/.garminconnect` (mapped to `/volume1/docker/garmin-api/tokens` on your NAS). On every subsequent restart the saved token is reused — no password needed until the token expires.
+
+> **Note:** The server runs on port `8080` inside the container, mapped to port `8085` on your NAS. n8n calls it at `http://garmin-api:8080` over the internal Docker network.
+
+---
+
+### Step 10: Complete the first-time Garmin login
 
 When the `garmin-api` container starts for the very first time, Garmin Connect will send a **one-time verification code to your email** as part of their MFA process.
 
@@ -290,7 +336,7 @@ The container saves a session token to `/volume1/docker/garmin-api/tokens` — t
 
 ## Part 2 — n8n setup
 
-### Step 10: Create your n8n account
+### Step 11: Create your n8n account
 
 1. Open `http://[your NAS IP]:5678` in your browser
 2. Click **Get started**
@@ -301,7 +347,7 @@ The container saves a session token to `/volume1/docker/garmin-api/tokens` — t
 
 ---
 
-### Step 11: Create a Groq API key
+### Step 12: Create a Groq API key
 
 The workflow uses [Groq](https://groq.com) as its AI engine. Groq offers a free tier that is sufficient for daily use.
 
@@ -318,7 +364,7 @@ The workflow uses [Groq](https://groq.com) as its AI engine. Groq offers a free 
 
 ---
 
-### Step 12: Configure your email (SMTP)
+### Step 13: Configure your email (SMTP)
 
 The workflow sends the daily report via email using SMTP. You can use any provider that supports SMTP.
 
@@ -347,7 +393,7 @@ Zoho Mail at [https://mail.zoho.eu](https://mail.zoho.eu) works well as a free s
 
 ---
 
-### Step 13: Import the workflow
+### Step 14: Import the workflow
 
 1. In n8n, go to **Workflows** in the left sidebar
 2. Click **Add workflow**
@@ -358,17 +404,17 @@ Zoho Mail at [https://mail.zoho.eu](https://mail.zoho.eu) works well as a free s
 
 ---
 
-### Step 14: Configure the workflow nodes
+### Step 15: Configure the workflow nodes
 
 After importing, open the workflow and update the following nodes:
 
 **Groq AI Analysis node:**
 - Click the node
-- Under **Credential**, select your Groq credential from Step 11
+- Under **Credential**, select your Groq credential from Step 12
 
 **Send an Email node:**
 - Click the node
-- Under **Credential**, select your SMTP credential from Step 12
+- Under **Credential**, select your SMTP credential from Step 13
 - Set the **To** field to your recipient email address
 - Set the **From** field to your sender email address
 
@@ -376,7 +422,7 @@ After importing, open the workflow and update the following nodes:
 
 ---
 
-### Step 15: Activate the workflow
+### Step 16: Activate the workflow
 
 The workflow is inactive by default after importing.
 
@@ -390,7 +436,7 @@ The workflow is inactive by default after importing.
 
 ## n8n Workflow JSON
 
-Import the `Garmin_clean.json` file from this repository into n8n (see Step 13).
+Import the `Garmin_clean.json` file from this repository into n8n (see Step 14).
 
 The JSON file is included separately to keep this README readable. It contains the full workflow with all 8 nodes, pre-configured connections, and placeholder values for your credentials.
 
