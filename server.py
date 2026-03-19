@@ -319,11 +319,24 @@ def workouts():
     """
     Geplande workouts uit Garmin Connect.
     Gebruik: /workouts?start=0&limit=20
-    Geeft alle opgeslagen workouts terug inclusief stappen, duur en hartslagzones.
+    Geeft alle opgeslagen workouts terug inclusief naam, type en geschatte duur.
     """
     start = request.args.get('start', 0, type=int)
     limit = request.args.get('limit', 20, type=int)
     return jsonify(client.get_workouts(start, limit))
+
+
+@app.route('/workout-detail')
+@requires_client
+def workout_detail():
+    """
+    Details van één workout inclusief alle stappen (warm-up, run, cooldown etc.).
+    Gebruik: /workout-detail?id=<workoutId>
+    """
+    workout_id = request.args.get('id', type=int)
+    if not workout_id:
+        return jsonify({'error': 'id parameter verplicht'}), 400
+    return jsonify(client.get_workout_by_id(workout_id))
 
 
 # ── Start ─────────────────────────────────────────────────────────────────────
