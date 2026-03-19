@@ -313,6 +313,19 @@ def persoonlijke_records():
     return jsonify(client.get_personal_record())
 
 
+@app.route('/workouts')
+@requires_client
+def workouts():
+    """
+    Geplande workouts uit Garmin Connect.
+    Gebruik: /workouts?start=0&limit=20
+    Geeft alle opgeslagen workouts terug inclusief stappen, duur en hartslagzones.
+    """
+    start = request.args.get('start', 0, type=int)
+    limit = request.args.get('limit', 20, type=int)
+    return jsonify(client.get_workouts(start, limit))
+
+
 # ── Start ─────────────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':
