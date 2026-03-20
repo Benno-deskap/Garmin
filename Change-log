@@ -1,1 +1,27 @@
 
+## Changelog
+
+### 2026-03-20 (Garmin_clean.json)
+
+- **Removed** the separate "Fetch 5K Schedule" node and the hardcoded 8-week training schema — the workflow now uses your actual planned workouts from Garmin Connect instead
+- **Added** native Garmin workout integration — the workflow fetches planned workouts via the new `/workouts` and `/workout-detail` API endpoints, including workout name, estimated duration, and full step-by-step instructions (warmup → intervals → cooldown)
+- **Improved** training advice in the AI analysis — workout recommendations are now always based on live data from your Garmin Connect training plan rather than a fixed internal schedule
+- **Added** multi-model fallback in the Groq AI Analysis node — the workflow first attempts `openai/gpt-oss-120b` and automatically retries with `llama-3.3-70b-versatile` on failure, with exponential backoff (15s / 30s / 60s / 90s) for rate limit errors
+- **Added** 30-day weight trend graph to the HTML report — the `/gewicht` endpoint now also returns a full 30-day measurement range for trend visualisation
+- **Fixed** today's step count now tracked separately from the 10-day rolling average, preventing the AI from reporting a stale average as today's value
+- **Updated** workflow node count from 8 to 7 following removal of the 5K schedule node
+- **Updated** server endpoint table in this README to include `/workouts` and `/workout-detail`
+
+### 2026-03-19 (Server.py)
+
+- **Added** `/workouts` endpoint — returns all planned workouts from Garmin Connect including name, type and estimated duration (`?start=` and `?limit=` parameters supported)
+- **Added** `/workout-detail` endpoint — returns the full step-by-step breakdown of a single workout by ID (`?id=<workoutId>`), including warmup, run intervals and cooldown segments
+- **Added** `/herverbind` POST endpoint — forces a fresh Garmin login without restarting the container, useful after an expired session
+- **Improved** `/health` endpoint — now also returns the logged-in display name and today's date alongside connection status
+- **Improved** `/gewicht` endpoint — now supports both a single-day query (`?datum=`) and a date-range query (`?start=` / `?eind=`) for 30-day weight trend data
+- **Improved** authentication flow — token login and credential login are now fully separated; the server first attempts to resume from saved tokens and only falls back to a full credential login if no valid tokens exist
+- **Improved** MFA handling — rate limit (429), wrong code (401/403) and other HTTP errors during MFA are now caught separately with specific log messages instead of a generic exception
+- **Added** `@requires_client` decorator — all endpoints now share a single error handler that returns `503` when the Garmin client is not initialised, `401` on expired sessions, and `502` on other HTTP errors, replacing scattered `try/except` blocks in every route
+- **Added** structured logging via Python `logging` module — replaces bare `print()` statements with timestamped log lines at `INFO`, `WARNING` and `ERROR` levels
+- **Improved** `vo2max` endpoint — date-range loop refactored into a reusable `_fetch()` helper, removing code duplication
+- **Removed** inline `from datetime import ...` inside the `vo2max` function — all imports moved to the top of the file
