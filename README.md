@@ -451,7 +451,7 @@ The JSON file is included separately to keep this README readable. It contains t
 
 ## Changelog
 
-### 2026-03-20
+### 2026-03-20 (Garmin_clean.json)
 
 - **Removed** the separate "Fetch 5K Schedule" node and the hardcoded 8-week training schema — the workflow now uses your actual planned workouts from Garmin Connect instead
 - **Added** native Garmin workout integration — the workflow fetches planned workouts via the new `/workouts` and `/workout-detail` API endpoints, including workout name, estimated duration, and full step-by-step instructions (warmup → intervals → cooldown)
@@ -462,7 +462,7 @@ The JSON file is included separately to keep this README readable. It contains t
 - **Updated** workflow node count from 8 to 7 following removal of the 5K schedule node
 - **Updated** server endpoint table in this README to include `/workouts` and `/workout-detail`
 
-### 2026-03-19 — server.py
+### 2026-03-19 (Server.py)
 
 - **Added** `/workouts` endpoint — returns all planned workouts from Garmin Connect including name, type and estimated duration (`?start=` and `?limit=` parameters supported)
 - **Added** `/workout-detail` endpoint — returns the full step-by-step breakdown of a single workout by ID (`?id=<workoutId>`), including warmup, run intervals and cooldown segments
